@@ -17,37 +17,21 @@ Date                 : 2019-08-26
 """
 
 import os
-from PyQt5.QtWidgets import QMenu, QToolBar, QAction
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QSettings
-from qgis.core import QgsProject
-from functools import partial
-from .inspector_dock import InspectorDock
+from .widgets import InspectorFactory
+from .settings import PLUGIN_DISPLAY_NAME
+
 
 class InspectorPlugin:
 
     def __init__(self, iface):
         self.iface = iface
-        self.canvas = iface.mapCanvas()
-        self.pluginPath = os.path.dirname(__file__)
+        self.factory = None
 
     def initGui(self):
-        self.actionOpen = QAction("Open Inspector", self.iface.mainWindow())
-        self.actionOpen.setIcon(QIcon(os.path.join(self.pluginPath, "inspector.png")))
-        self.actionOpen.setToolTip("Opens the Inspector window")
-
-        self.iface.addToolBarIcon(self.actionOpen)
-        self.iface.addPluginToMenu("Plugin &Inspector", self.actionOpen)
-        self.iface.registerMainWindowAction(self.actionOpen, 'F7')
-        
-        self.actionOpen.triggered.connect(self.openDock)
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "inspector.png"))
+        self.factory = InspectorFactory(PLUGIN_DISPLAY_NAME, icon)
+        self.iface.registerDevToolWidgetFactory(self.factory)
 
     def unload(self):
-        self.iface.removePluginMenu("Plugin &Inspector",self.actionOpen)
-        self.iface.removeToolBarIcon(self.actionOpen)
-        self.iface.unregisterMainWindowAction(self.actionOpen)
-    
-    def openDock(self):
-        self.inspectorDock = InspectorDock(self.iface)
-        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.inspectorDock)
-        
+        self.iface.unregisterDevToolWidgetFactory(self.factory)

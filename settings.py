@@ -1,0 +1,1 @@
+PLUGIN_DISPLAY_NAME = "Plugin Inspector"
