@@ -19,6 +19,6 @@ Date                 : 2019-08-26
 
 
 
-def classFactory(iface):    
+def classFactory(iface):
     from .inspector_plugin import InspectorPlugin
     return InspectorPlugin(iface)

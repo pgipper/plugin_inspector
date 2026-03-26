@@ -9,16 +9,30 @@ from typing import Any, List, Type
 
 from PyQt5 import uic
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QTreeWidgetItem, QWidget, QComboBox, QPushButton, QTextEdit, QPlainTextEdit, QTreeWidget
-from qgis.gui import QgsDevToolWidgetFactory, QgsDevToolWidget
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QPlainTextEdit,
+    QPushButton,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QWidget,
+)
 from qgis.core import QgsApplication
-from qgis.utils import plugins, findPlugins
+from qgis.gui import QgsDevToolWidget, QgsDevToolWidgetFactory
+from qgis.utils import findPlugins, plugins
 
-from .profilers import MyProfiler, OxProfiler, PyinstrumentProfiler, cProfileProfiler, ProfilerAdapter
 from .gadgets import get_sizof_log, memory_usage_psutil, writeProfileToCsv
+from .profilers import (
+    MyProfiler,
+    OxProfiler,
+    ProfilerAdapter,
+    PyinstrumentProfiler,
+    cProfileProfiler,
+)
 
 pluginPath = os.path.dirname(__file__)
-WIDGET, BASE = uic.loadUiType(os.path.join(pluginPath, 'forms', 'inspector_widget.ui'))
+WIDGET, BASE = uic.loadUiType(os.path.join(pluginPath, "forms", "inspector_widget.ui"))
 
 
 class InspectorWidget(BASE, WIDGET):
@@ -32,7 +46,7 @@ class InspectorWidget(BASE, WIDGET):
         self.setupUi(self)
         self._profilers: List[ProfilerAdapter] = []
         self.profilePath = QgsApplication.qgisSettingsDirPath()
-        self.pluginPath = os.path.join(self.profilePath, 'python', 'plugins')
+        self.pluginPath = os.path.join(self.profilePath, "python", "plugins")
         self.pluginMetadata = findPlugins(self.pluginPath)
 
         for name, info in self.pluginMetadata:
@@ -68,6 +82,7 @@ class InspectorWidget(BASE, WIDGET):
             profiler.start()
 
         from pyinstrument import Profiler
+
         self.profiler = Profiler()
         self.profiler.start()
 
@@ -79,7 +94,7 @@ class InspectorWidget(BASE, WIDGET):
         HTML_PATH = os.path.join(os.getcwd(), "pyinstrument_profile.html")
         self.profiler.stop()
         self.profiler.write_html(HTML_PATH)
-        url = 'file://' + os.path.realpath(HTML_PATH)
+        url = "file://" + os.path.realpath(HTML_PATH)
         webbrowser.open(url, new=2)  # open in new tab
 
     def inspect(self):
@@ -100,7 +115,6 @@ class InspectorWidget(BASE, WIDGET):
         #         self.txtLog.appendPlainText('\t' + k + ' : ' + v)
         #     self.txtLog.appendHtml('<br>')
 
-
         # Log some instance vars
         # self.txtLog.appendPlainText(f'Vars of main plugin class "{pluginInstance.__class__.__name__}" ')
         # for key, var in vars(pluginInstance).items():
@@ -114,19 +128,27 @@ class InspectorWidget(BASE, WIDGET):
 
     def fillTree(self, pluginInstance):
         rootItem = self.treeObjects.invisibleRootItem()
-        self.recursiveInspection(rootItem, pluginInstance, [pluginInstance.__class__.__name__])
+        self.recursiveInspection(
+            rootItem, pluginInstance, [pluginInstance.__class__.__name__]
+        )
         self.treeObjects.addTopLevelItem(rootItem)
         rootItem.setExpanded(True)
 
     def recursiveInspection(self, parent: QTreeWidgetItem, obj: Any, path: List[str]):
         """appends a QTreewidgetItem to the given parent"""
         try:
-            item = QTreeWidgetItem(parent, [path[-1], str(obj), str(sys.getsizeof(obj))], 0)
+            item = QTreeWidgetItem(
+                parent, [path[-1], str(obj), str(sys.getsizeof(obj))], 0
+            )
         except Exception as ex:
-            print('couldnt create an item', ex)
-            item = QTreeWidgetItem(parent, ['', '', ''], 0)
+            print("couldnt create an item", ex)
+            item = QTreeWidgetItem(parent, ["", "", ""], 0)
         item.setExpanded(True)
-        if ((obj!=None) and (not isinstance(obj, (str,float,int,list,dict,set))) and hasattr(obj,'__dict__')):
+        if (
+            (obj != None)
+            and (not isinstance(obj, (str, float, int, list, dict, set)))
+            and hasattr(obj, "__dict__")
+        ):
             for attr, val in obj.__dict__.items():
                 temp_path = path[:]
                 temp_path.append(attr)

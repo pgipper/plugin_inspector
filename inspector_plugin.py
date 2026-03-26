@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 /***************************************************************************
 Name			 	 : QGIS Plugin Inspector
@@ -17,13 +16,14 @@ Date                 : 2019-08-26
 """
 
 import os
+
 from PyQt5.QtGui import QIcon
-from .widgets import InspectorFactory
+
 from .settings import PLUGIN_DISPLAY_NAME
+from .widgets import InspectorFactory
 
 
 class InspectorPlugin:
-
     def __init__(self, iface):
         self.iface = iface
         self.factory = None

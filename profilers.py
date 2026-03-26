@@ -8,9 +8,9 @@ from cProfile import Profile
 from pathlib import Path
 from pstats import SortKey
 
-from PyQt5.QtCore import QSortFilterProxyModel, QThread, QTimer, QObject, pyqtSignal
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QTableView, QDialog, QVBoxLayout, QTextEdit
+from PyQt5.QtCore import QObject, QSortFilterProxyModel, QThread, QTimer, pyqtSignal
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QDialog, QTableView, QTextEdit, QVBoxLayout
 from qgis.core import QgsApplication
 from qgis.utils import iface
 
@@ -18,7 +18,6 @@ from .gadgets import writeProfileToCsv
 
 
 class ProfilerAdapter(ABC):
-
     @classmethod
     @abstractmethod
     def canActivate(cls) -> bool:
@@ -46,13 +45,14 @@ class PyinstrumentProfiler(ProfilerAdapter):
 
     def start(self):
         from pyinstrument import Profiler
+
         self.profiler = Profiler()
         self.profiler.start()
 
     def stop(self):
         self.profiler.stop()
         self.profiler.write_html(self.HTML_PATH)
-        url = 'file://' + os.path.realpath(self.HTML_PATH)
+        url = "file://" + os.path.realpath(self.HTML_PATH)
         webbrowser.open(url, new=2)  # open in new tab
 
 
@@ -86,19 +86,20 @@ class cProfileProfiler(ProfilerAdapter):
         txt = Path(self.STATS_PATH).read_text()
         writeProfileToCsv(txt, self.CSV_PATH, self.CSV_DELIMITER)
         self.showResult()
-        #from snakeviz.stats import table_rows, json_stats
-        #rows = table_rows(ps)
-        #print(rows)
-        #jsonstats = json_stats(ps)
-        #print(jsonstats)
+        # from snakeviz.stats import table_rows, json_stats
+        # rows = table_rows(ps)
+        # print(rows)
+        # jsonstats = json_stats(ps)
+        # print(jsonstats)
 
         try:
-            import snakeviz
             import subprocess
+
+            import snakeviz
+
             subprocess.Popen(["snakeviz", self.PROF_PATH], shell=False)
         except ImportError:
             print("snakeviz is not installed")
-
 
     def showResult(self):
         dlg = QDialog(iface.mainWindow())
@@ -115,15 +116,14 @@ class cProfileProfiler(ProfilerAdapter):
 
     def getModel(self):
         model = QStandardItemModel()
-        with open(self.CSV_PATH, "r") as fileInput:
-            for i, row in enumerate(csv.reader(fileInput, delimiter=self.CSV_DELIMITER)):
+        with open(self.CSV_PATH) as fileInput:
+            for i, row in enumerate(
+                csv.reader(fileInput, delimiter=self.CSV_DELIMITER)
+            ):
                 if i == 0:
                     model.setHorizontalHeaderLabels([r.strip().strip('"') for r in row])
                 else:
-                    items = [
-                        QStandardItem(field.strip())
-                        for field in row
-                    ]
+                    items = [QStandardItem(field.strip()) for field in row]
                     if any(row):
                         model.appendRow(items)
 
@@ -133,7 +133,6 @@ class cProfileProfiler(ProfilerAdapter):
 
 
 class OxProfiler(ProfilerAdapter):
-
     @classmethod
     def canActivate(cls) -> bool:
         try:
@@ -145,6 +144,7 @@ class OxProfiler(ProfilerAdapter):
     def start(self) -> None:
         from ox_profile.core.launchers import SimpleLauncher
         from ox_profile.core.sampling import Sampler
+
         self.profiler = SimpleLauncher.launch()
 
     def stop(self) -> None:
@@ -167,7 +167,6 @@ class PySpyProfiler(ProfilerAdapter):
 
 
 class MyProfiler(ProfilerAdapter):
-
     @classmethod
     def canActivate(cls) -> bool:
         return True
