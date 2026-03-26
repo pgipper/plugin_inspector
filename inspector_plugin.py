@@ -17,7 +17,7 @@ Date                 : 2019-08-26
 
 import os
 
-from PyQt5.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon
 
 from .settings import PLUGIN_DISPLAY_NAME
 from .widgets import InspectorFactory

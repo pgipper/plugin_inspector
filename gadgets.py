@@ -1,4 +1,3 @@
-import sys
 from collections import deque
 from itertools import chain
 from reprlib import repr
@@ -13,15 +12,6 @@ def sizeof_fmt(num, suffix="B"):
         num /= 1024.0
     return "%.1f %s%s" % (num, "Yi", suffix)
 
-
-def get_sizof_log():
-    txt = ""
-    for name, size in sorted(
-        ((name, sys.getsizeof(value)) for name, value in list(globals().items())),
-        key=lambda x: -x[1],
-    )[:10]:
-        txt += f"{name:>30}: {sizeof_fmt(size):>8}\n"
-    return txt
 
 
 def memory_usage_psutil():
@@ -74,12 +64,3 @@ def total_size(o, handlers={}, verbose=False):
 
     return sizeof(o)
 
-
-def writeProfileToCsv(stats: str, path: str, delimiter: str = ","):
-    stats = "ncalls" + stats.split("ncalls")[-1]
-    stats = "\n".join(
-        [delimiter.join(line.rstrip().split(None, 6)) for line in stats.split("\n")]
-    )
-
-    with open(path, "w") as file:
-        file.write(stats)
