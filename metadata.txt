@@ -7,7 +7,7 @@ about=
 homepage=
 tags=
 
-version=0.2.0
+version=0.3.0
 qgisMinimumVersion=2.99
 qgisMaximumVersion=3.99
 
