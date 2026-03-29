@@ -64,7 +64,9 @@ class ProfilerSettingsDialog(QDialog):
                 settings_group.setFlat(True)
                 settings_form = QFormLayout()
                 settings_form.setContentsMargins(24, 0, 0, 0)
-                settings_form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+                settings_form.setFieldGrowthPolicy(
+                    QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+                )
 
                 profiler_widgets: Dict[str, QWidget] = {}
 
@@ -106,7 +108,7 @@ class ProfilerSettingsDialog(QDialog):
                 layout.addWidget(settings_group)
 
         button_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)

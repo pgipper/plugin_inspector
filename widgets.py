@@ -8,6 +8,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
     QComboBox,
+    QDialog,
     QFileDialog,
     QPlainTextEdit,
     QPushButton,
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 pluginPath = os.path.dirname(__file__)
 WIDGET, BASE = uic.loadUiType(os.path.join(pluginPath, "forms", "inspector_widget.ui"))
 _PLACEHOLDER = "⏳ …"
-_LAZY_DATA_ROLE = Qt.UserRole + 1
+_LAZY_DATA_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 class InspectorWidget(BASE, WIDGET):
@@ -136,7 +137,7 @@ class InspectorWidget(BASE, WIDGET):
             self._profiler_settings,
             parent=self,
         )
-        if dlg.exec() == ProfilerSettingsDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             self._profiler_settings = dlg.get_settings()
             self._enabled_profilers = [
                 cls
