@@ -29,6 +29,7 @@ from .profilers import (
     cProfileProfiler,
 )
 from .dialogs import ProfilerSettingsDialog
+from .settings import load_profiler_settings, save_profiler_settings
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +57,14 @@ class InspectorWidget(BASE, WIDGET):
             VizTracerProfiler,
         ]
 
-        # Which profiler classes are enabled by the user (default: pyinstrument if available)
+        # Persisted profiler settings keyed by profiler class.
+        self._profiler_settings = load_profiler_settings(self._profiler_classes)
+
+        # Which profiler classes are enabled by the user.
         self._enabled_profilers: List[Type[ProfilerAdapter]] = [
-            cls for cls in self._profiler_classes if cls.canActivate()
+            cls
+            for cls in self._profiler_classes
+            if self._profiler_settings.get(cls, {}).get("enabled", True) and cls.canActivate()
         ]
 
         # Currently running profiler instances (populated on start, cleared on stop)
@@ -101,7 +107,8 @@ class InspectorWidget(BASE, WIDGET):
         names = []
         for cls in self._enabled_profilers:
             if cls.canActivate():
-                instance = cls()
+                settings = self._profiler_settings.get(cls, {})
+                instance = cls(settings=settings)
                 instance.start()
                 self._running_profilers.append(instance)
                 names.append(cls.display_name)
@@ -131,11 +138,18 @@ class InspectorWidget(BASE, WIDGET):
         """Open the profiler settings dialog."""
         dlg = ProfilerSettingsDialog(
             self._profiler_classes,
-            self._enabled_profilers,
+            self._profiler_settings,
             parent=self,
         )
         if dlg.exec() == ProfilerSettingsDialog.Accepted:
-            self._enabled_profilers = dlg.selected_profilers()
+            self._profiler_settings = dlg.get_settings()
+            self._enabled_profilers = [
+                cls
+                for cls in self._profiler_classes
+                if self._profiler_settings.get(cls, {}).get("enabled", True)
+                and cls.canActivate()
+            ]
+            save_profiler_settings(self._profiler_classes, self._profiler_settings)
             names = [cls.display_name for cls in self._enabled_profilers]
             self.txtLog.appendPlainText(f"Profilers enabled: {', '.join(names) or 'none'}")
 

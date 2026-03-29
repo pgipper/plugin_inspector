@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 class ProfilerAdapter(ABC):
     display_name: str = "Unknown Profiler"
     install_hint: str = ""
+    settings_key: str = ""
+    settings_schema: dict = {}
+
+    def __init__(self, settings: dict | None = None):
+        self._settings = settings or {}
 
     @classmethod
     @abstractmethod
@@ -41,6 +46,7 @@ class ProfilerAdapter(ABC):
 class PyinstrumentProfiler(ProfilerAdapter):
     display_name = "pyinstrument"
     install_hint = "!pip install pyinstrument"
+    settings_key = "pyinstrument"
     HTML_PATH = os.path.join(os.getcwd(), "pyinstrument_profile.html")
 
     @classmethod
@@ -70,6 +76,7 @@ class PyinstrumentProfiler(ProfilerAdapter):
 class cProfileProfiler(ProfilerAdapter):
     display_name = "cProfile"
     install_hint = "!pip install snakeviz (optional, for interactive visualization)"
+    settings_key = "cprofile"
     PROF_PATH = os.path.join(QgsApplication.qgisSettingsDirPath(), "cProfile_dump.prof")
     STATS_PATH = os.path.join(QgsApplication.qgisSettingsDirPath(), "pstats_dump.txt")
 
@@ -115,16 +122,24 @@ class cProfileProfiler(ProfilerAdapter):
 
 
 class YappiProfiler(ProfilerAdapter):
-    """Thread-aware profiler using wall-clock time.
+    """Thread-aware profiler with configurable clock type.
 
-    Wall-time mode captures everything that happens during nested event loops
-    (e.g. QDialog.exec()), because it measures elapsed real time rather than
-    CPU time.  yappi also profiles *all* threads, so work offloaded to
-    background threads during dialog execution becomes visible.
+    In wall-time mode, yappi captures everything that happens during nested
+    event loops (e.g. QDialog.exec()), because it measures elapsed real time
+    rather than CPU time. yappi also profiles *all* threads, so work
+    offloaded to background threads during dialog execution becomes visible.
     """
 
-    display_name = "yappi (wall-time)"
+    display_name = "yappi"
     install_hint = "!pip install yappi"
+    settings_key = "yappi"
+    settings_schema = {
+        "use_wall_time": {
+            "type": "bool",
+            "default": True,
+            "label": "Use wall-clock time (vs CPU time)",
+        }
+    }
     PROF_PATH = os.path.join(
         QgsApplication.qgisSettingsDirPath(), "yappi_wall.prof"
     )
@@ -144,9 +159,8 @@ class YappiProfiler(ProfilerAdapter):
         import yappi
 
         yappi.clear_stats()
-        # Wall-clock mode is key: it includes time spent waiting inside
-        # modal dialog event loops, not just CPU-busy time.
-        yappi.set_clock_type("wall")
+        clock = "wall" if self._settings.get("use_wall_time", True) else "cpu"
+        yappi.set_clock_type(clock)
         yappi.start(builtins=True)
 
     def stop(self):
@@ -173,11 +187,14 @@ class YappiProfiler(ProfilerAdapter):
             self._snakeviz_launched = True
 
     def get_summary(self) -> str:
+        clock_label = (
+            "wall-time" if self._settings.get("use_wall_time", True) else "cpu-time"
+        )
         if getattr(self, "_snakeviz_launched", False):
-            return (
-                f"yappi (wall-time): snakeviz opened in browser ({self.PROF_PATH})\n"
-                "ℹ️  Wall-time mode — includes time inside dialog event loops."
-            )
+            summary = f"yappi ({clock_label}): snakeviz opened in browser ({self.PROF_PATH})"
+            if self._settings.get("use_wall_time", True):
+                summary += "\nℹ️  Wall-time mode — includes time inside dialog event loops."
+            return summary
         try:
             lines = Path(self.STATS_PATH).read_text().splitlines()[:30]
             hint = ""
@@ -186,11 +203,10 @@ class YappiProfiler(ProfilerAdapter):
                     "\n💡 Install snakeviz for interactive visualization: "
                     "!pip install snakeviz\n"
                 )
-            return (
-                hint
-                + "yappi (wall-time) results — includes dialog/event-loop time:\n"
-                + "\n".join(lines)
-            )
+            title = f"yappi ({clock_label}) results"
+            if self._settings.get("use_wall_time", True):
+                title += " — includes dialog/event-loop time"
+            return hint + title + ":\n" + "\n".join(lines)
         except Exception:
             return f"yappi: results written to {self.PROF_PATH}"
 
@@ -200,12 +216,66 @@ class VizTracerProfiler(ProfilerAdapter):
 
     display_name = "viztracer (timeline)"
     install_hint = "!pip install viztracer"
+    settings_key = "viztracer"
+    settings_schema = {
+        "max_stack_depth": {
+            "type": "int",
+            "default": -1,
+            "label": "Max stack depth (-1 = unlimited)",
+        },
+        "log_func_args": {
+            "type": "bool",
+            "default": False,
+            "label": "Log function arguments",
+        },
+        "log_func_retval": {
+            "type": "bool",
+            "default": False,
+            "label": "Log return values",
+        },
+        "log_gc": {
+            "type": "bool",
+            "default": False,
+            "label": "Log garbage collection",
+        },
+        "ignore_c_function": {
+            "type": "bool",
+            "default": False,
+            "label": "Ignore C extension functions",
+        },
+        "ignore_frozen": {
+            "type": "bool",
+            "default": False,
+            "label": "Ignore frozen/importlib modules",
+        },
+        "log_print": {
+            "type": "bool",
+            "default": False,
+            "label": "Capture print() in timeline",
+        },
+        "log_async": {
+            "type": "bool",
+            "default": False,
+            "label": "Trace async/await",
+        },
+        "min_duration": {
+            "type": "float",
+            "default": 0,
+            "label": "Min duration µs (0 = all)",
+        },
+        "minimize_memory": {
+            "type": "bool",
+            "default": False,
+            "label": "Minimize memory usage",
+        },
+    }
     JSON_PATH = os.path.join(
         QgsApplication.qgisSettingsDirPath(), "viztracer_report.json"
     )
     _vizviewer_proc: subprocess.Popen | None = None
 
-    def __init__(self):
+    def __init__(self, settings: dict | None = None):
+        super().__init__(settings)
         self.tracer = None
         self._vizviewer_launched = False
 
@@ -227,7 +297,16 @@ class VizTracerProfiler(ProfilerAdapter):
 
         self.tracer = VizTracer(
             output_file=self.JSON_PATH,
-            max_stack_depth=15,
+            max_stack_depth=self._settings.get("max_stack_depth", -1),
+            log_func_args=self._settings.get("log_func_args", False),
+            log_func_retval=self._settings.get("log_func_retval", False),
+            log_gc=self._settings.get("log_gc", False),
+            ignore_c_function=self._settings.get("ignore_c_function", False),
+            ignore_frozen=self._settings.get("ignore_frozen", False),
+            log_print=self._settings.get("log_print", False),
+            log_async=self._settings.get("log_async", False),
+            min_duration=self._settings.get("min_duration", 0),
+            minimize_memory=self._settings.get("minimize_memory", False),
         )
         self.tracer.start()
 
