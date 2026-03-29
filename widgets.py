@@ -7,7 +7,6 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
-    QAction,
     QComboBox,
     QFileDialog,
     QPlainTextEdit,
@@ -18,7 +17,8 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.core import QgsApplication
 from qgis.gui import QgsDevToolWidget, QgsDevToolWidgetFactory
-from qgis.utils import findPlugins, plugins
+from qgis.utils import plugins, updateAvailablePlugins
+from pyplugin_installer import installer_data
 
 from .gadgets import _find_script, sizeof_fmt
 from .profilers import (
@@ -70,16 +70,11 @@ class InspectorWidget(BASE, WIDGET):
         # Currently running profiler instances (populated on start, cleared on stop)
         self._running_profilers: List[ProfilerAdapter] = []
 
-        self.profilePath = QgsApplication.qgisSettingsDirPath()
-        self.pluginPath = os.path.join(self.profilePath, "python", "plugins")
-        self.pluginMetadata = findPlugins(self.pluginPath)
-
-        for name, info in self.pluginMetadata:
-            if name in plugins:
-                self.cmbPlugins.addItem(name, info)
-
-        # Wire toolbar actions
+        self.refreshSuspects()
+        
+        # Wire toolbar actions and buttons
         self.btnInvestigate.clicked.connect(self.inspect)
+        self.btnRefresh.clicked.connect(self.refreshSuspects)
         self.mActionProfiler.triggered.connect(self.toggleProfiler)
         self.mActionClear.triggered.connect(self.clear)
         self.mActionSaveLog.triggered.connect(self.saveLog)
@@ -182,6 +177,23 @@ class InspectorWidget(BASE, WIDGET):
                         f"Run !pip install snakeviz in the QGIS Python Console."
                     )
 
+    def refreshSuspects(self):
+        """Refresh the list of plugins in the combo box."""
+        current = self.cmbPlugins.currentText()
+        self.cmbPlugins.clear()
+        updateAvailablePlugins()
+        plugins_list = sorted(plugins.keys())
+        for name in plugins_list:
+            try:
+                icon = QIcon(installer_data.plugins.all()[name]['icon'])
+            except KeyError:
+                icon = QIcon()
+            self.cmbPlugins.addItem(icon, name)
+        index = self.cmbPlugins.findText(current)
+        if index >= 0:
+            self.cmbPlugins.setCurrentIndex(index)
+
+            
     def inspect(self):
         suspectName = self.cmbPlugins.currentText()
         pluginInstance = plugins[suspectName]
