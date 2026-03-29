@@ -79,6 +79,7 @@ class cProfileProfiler(ProfilerAdapter):
     settings_key = "cprofile"
     PROF_PATH = os.path.join(QgsApplication.qgisSettingsDirPath(), "cProfile_dump.prof")
     STATS_PATH = os.path.join(QgsApplication.qgisSettingsDirPath(), "pstats_dump.txt")
+    _snakeviz_proc: subprocess.Popen | None = None
 
     @classmethod
     def canActivate(cls) -> bool:
@@ -100,11 +101,20 @@ class cProfileProfiler(ProfilerAdapter):
             ps.sort_stats(SortKey.CUMULATIVE)
             ps.print_stats()
 
+        # Kill previous snakeviz (it binds a port)
+        if cProfileProfiler._snakeviz_proc is not None:
+            try:
+                cProfileProfiler._snakeviz_proc.terminate()
+                cProfileProfiler._snakeviz_proc.wait(timeout=5)
+            except Exception:
+                pass
+            cProfileProfiler._snakeviz_proc = None
+
         # Launch snakeviz if available (opens interactive browser visualization)
         self._snakeviz_launched = False
         snakeviz = _find_script("snakeviz")
         if snakeviz:
-            subprocess.Popen([snakeviz, self.PROF_PATH])
+            cProfileProfiler._snakeviz_proc = subprocess.Popen([snakeviz, self.PROF_PATH])
             self._snakeviz_launched = True
 
     def get_summary(self) -> str:
@@ -146,6 +156,7 @@ class YappiProfiler(ProfilerAdapter):
     STATS_PATH = os.path.join(
         QgsApplication.qgisSettingsDirPath(), "yappi_wall.txt"
     )
+    _snakeviz_proc: subprocess.Popen | None = None
 
     @classmethod
     def canActivate(cls) -> bool:
@@ -179,11 +190,20 @@ class YappiProfiler(ProfilerAdapter):
         except Exception as ex:
             logger.warning("Could not write yappi text stats: %s", ex)
 
+        # Kill previous snakeviz (it binds a port)
+        if YappiProfiler._snakeviz_proc is not None:
+            try:
+                YappiProfiler._snakeviz_proc.terminate()
+                YappiProfiler._snakeviz_proc.wait(timeout=5)
+            except Exception:
+                pass
+            YappiProfiler._snakeviz_proc = None
+
         # Try snakeviz for interactive visualisation
         self._snakeviz_launched = False
         snakeviz = _find_script("snakeviz")
         if snakeviz:
-            subprocess.Popen([snakeviz, self.PROF_PATH])
+            YappiProfiler._snakeviz_proc = subprocess.Popen([snakeviz, self.PROF_PATH])
             self._snakeviz_launched = True
 
     def get_summary(self) -> str:
