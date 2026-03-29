@@ -24,6 +24,8 @@ from .gadgets import sizeof_fmt
 from .profilers import (
     ProfilerAdapter,
     PyinstrumentProfiler,
+    VizTracerProfiler,
+    YappiProfiler,
     cProfileProfiler,
 )
 from .dialogs import ProfilerSettingsDialog
@@ -50,6 +52,8 @@ class InspectorWidget(BASE, WIDGET):
         self._profiler_classes: List[Type[ProfilerAdapter]] = [
             PyinstrumentProfiler,
             cProfileProfiler,
+            YappiProfiler,
+            VizTracerProfiler,
         ]
 
         # Which profiler classes are enabled by the user (default: pyinstrument if available)
