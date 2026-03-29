@@ -87,13 +87,27 @@ def _find_script(name: str) -> str | None:
         candidate = os.path.join(python_dir, "Scripts", name + ".exe")
         if os.path.isfile(candidate):
             return candidate
+
+        # 3. Windows user install – pip falls back to a user location when
+        #    the global site-packages directory is not writeable.
+        #    %APPDATA%\Python\PythonXYY\Scripts\
+
+        version_tag = f"Python{sys.version_info.major}{sys.version_info.minor}"
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            candidate = os.path.join(
+                appdata, "Python", version_tag, "Scripts", name + ".exe"
+            )
+            if os.path.isfile(candidate):
+                return candidate
+
     else:
-        # 3. Linux/macOS: same directory as python
+        # 4. Linux/macOS: same directory as python
         candidate = os.path.join(python_dir, name)
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
 
-        # 4. User-local installs
+        # 5. User-local installs
         candidate = os.path.expanduser(f"~/.local/bin/{name}")
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate

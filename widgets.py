@@ -20,7 +20,7 @@ from qgis.core import QgsApplication
 from qgis.gui import QgsDevToolWidget, QgsDevToolWidgetFactory
 from qgis.utils import findPlugins, plugins
 
-from .gadgets import sizeof_fmt
+from .gadgets import _find_script, sizeof_fmt
 from .profilers import (
     ProfilerAdapter,
     PyinstrumentProfiler,
@@ -155,8 +155,6 @@ class InspectorWidget(BASE, WIDGET):
 
     def _checkDependencies(self):
         """Check profiler availability and warn user about missing dependencies."""
-        import shutil
-
         for cls in self._profiler_classes:
             if not cls.canActivate() and cls.install_hint:
                 self.txtLog.appendPlainText(
@@ -164,7 +162,7 @@ class InspectorWidget(BASE, WIDGET):
                     f"Run {cls.install_hint} in the QGIS Python Console to enable it."
                 )
             elif cls.canActivate() and cls.install_hint:
-                if "snakeviz" in cls.install_hint and not shutil.which("snakeviz"):
+                if "snakeviz" in cls.install_hint and not _find_script("snakeviz"):
                     self.txtLog.appendPlainText(
                         f"💡 {cls.display_name}: Install snakeviz for interactive visualization. "
                         f"Run !pip install snakeviz in the QGIS Python Console."
