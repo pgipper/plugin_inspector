@@ -1,9 +1,7 @@
 import logging
 import os
 import pstats
-import shutil
 import subprocess
-import sys
 import webbrowser
 from abc import ABC, abstractmethod
 from cProfile import Profile
@@ -11,6 +9,8 @@ from pathlib import Path
 from pstats import SortKey
 
 from qgis.core import QgsApplication
+
+from .gadgets import _find_script
 
 
 logger = logging.getLogger(__name__)
@@ -95,8 +95,9 @@ class cProfileProfiler(ProfilerAdapter):
 
         # Launch snakeviz if available (opens interactive browser visualization)
         self._snakeviz_launched = False
-        if shutil.which("snakeviz"):
-            subprocess.Popen(["snakeviz", self.PROF_PATH])
+        snakeviz = _find_script("snakeviz")
+        if snakeviz:
+            subprocess.Popen([snakeviz, self.PROF_PATH])
             self._snakeviz_launched = True
 
     def get_summary(self) -> str:
@@ -106,7 +107,7 @@ class cProfileProfiler(ProfilerAdapter):
         try:
             lines = Path(self.STATS_PATH).read_text().splitlines()[:30]
             hint = ""
-            if not shutil.which("snakeviz"):
+            if not _find_script("snakeviz"):
                 hint = "\n💡 Install snakeviz for interactive visualization: !pip install snakeviz\n"
             return hint + "cProfile results (top entries):\n" + "\n".join(lines)
         except Exception:
@@ -166,8 +167,9 @@ class YappiProfiler(ProfilerAdapter):
 
         # Try snakeviz for interactive visualisation
         self._snakeviz_launched = False
-        if shutil.which("snakeviz"):
-            subprocess.Popen(["snakeviz", self.PROF_PATH])
+        snakeviz = _find_script("snakeviz")
+        if snakeviz:
+            subprocess.Popen([snakeviz, self.PROF_PATH])
             self._snakeviz_launched = True
 
     def get_summary(self) -> str:
@@ -179,7 +181,7 @@ class YappiProfiler(ProfilerAdapter):
         try:
             lines = Path(self.STATS_PATH).read_text().splitlines()[:30]
             hint = ""
-            if not shutil.which("snakeviz"):
+            if not _find_script("snakeviz"):
                 hint = (
                     "\n💡 Install snakeviz for interactive visualization: "
                     "!pip install snakeviz\n"
@@ -251,7 +253,7 @@ class VizTracerProfiler(ProfilerAdapter):
         self.tracer = None
 
         # Launch vizviewer if available
-        vizviewer_path = self._find_vizviewer()
+        vizviewer_path = _find_script("vizviewer")
         if vizviewer_path and os.path.isfile(self.JSON_PATH) and os.path.getsize(self.JSON_PATH) > 0:
             try:
                 proc = subprocess.Popen([vizviewer_path, "--once", self.JSON_PATH])
@@ -265,22 +267,6 @@ class VizTracerProfiler(ProfilerAdapter):
                 self.JSON_PATH,
                 self.install_hint,
             )
-
-    @staticmethod
-    def _find_vizviewer() -> str | None:
-        path = shutil.which("vizviewer")
-        if path and os.path.isfile(path) and os.access(path, os.X_OK):
-            return path
-
-        sibling = os.path.join(os.path.dirname(sys.executable), "vizviewer")
-        if os.path.isfile(sibling) and os.access(sibling, os.X_OK):
-            return sibling
-
-        user_local = os.path.expanduser("~/.local/bin/vizviewer")
-        if os.path.isfile(user_local) and os.access(user_local, os.X_OK):
-            return user_local
-
-        return None
 
     def get_summary(self) -> str:
         if self._vizviewer_launched:

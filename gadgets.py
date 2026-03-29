@@ -1,3 +1,6 @@
+import os
+import sys
+import shutil
 from collections import deque
 from itertools import chain
 from reprlib import repr
@@ -63,4 +66,37 @@ def total_size(o, handlers={}, verbose=False):
         return s
 
     return sizeof(o)
+
+
+def _find_script(name: str) -> str | None:
+    """Locate a pip-installed console script cross-platform.
+
+    On Windows, pip installs scripts as .exe in a Scripts/ subdirectory
+    next to the Python interpreter.  QGIS bundles its own Python, so that
+    directory is usually not on PATH.
+    """
+    # 1. Already on PATH?
+    path = shutil.which(name)
+    if path:
+        return path
+
+    python_dir = os.path.dirname(sys.executable)
+
+    if sys.platform == "win32":
+        # 2. Windows: <python_dir>/Scripts/name.exe
+        candidate = os.path.join(python_dir, "Scripts", name + ".exe")
+        if os.path.isfile(candidate):
+            return candidate
+    else:
+        # 3. Linux/macOS: same directory as python
+        candidate = os.path.join(python_dir, name)
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+        # 4. User-local installs
+        candidate = os.path.expanduser(f"~/.local/bin/{name}")
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return None
 
