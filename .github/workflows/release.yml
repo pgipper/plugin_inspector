@@ -26,6 +26,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           qgis-plugin-ci release ${VERSION} \
             --github-token ${{ secrets.GITHUB_TOKEN }} \
-            --create-plugin-repo
+            --create-plugin-repo \
             --release-tag ${GITHUB_REF_NAME}
 
