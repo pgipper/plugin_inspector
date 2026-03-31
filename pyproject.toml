@@ -1,0 +1,2 @@
+[tool.qgis-plugin-ci]
+plugin_path = "plugin_inspector"
