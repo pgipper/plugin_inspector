@@ -27,4 +27,5 @@ jobs:
           qgis-plugin-ci release ${VERSION} \
             --github-token ${{ secrets.GITHUB_TOKEN }} \
             --create-plugin-repo
+            --release-tag ${GITHUB_REF_NAME}
 
