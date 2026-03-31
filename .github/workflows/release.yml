@@ -1,8 +1,9 @@
 name: Release Plugin
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "*"
 
 jobs:
   release:
@@ -19,6 +20,11 @@ jobs:
 
       - name: Install qgis-plugin-ci
         run: pip install qgis-plugin-ci
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
 
       - name: Release
         run: |
