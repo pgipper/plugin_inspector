@@ -8,8 +8,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
@@ -25,9 +23,7 @@ jobs:
 
       - name: Release
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          qgis-plugin-ci release ${VERSION} \
+          qgis-plugin-ci release ${GITHUB_REF_NAME} \
             --github-token ${{ secrets.GITHUB_TOKEN }} \
-            --create-plugin-repo \
-            --release-tag ${GITHUB_REF_NAME}
+            --create-plugin-repo
 
