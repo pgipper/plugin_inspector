@@ -1,9 +1,10 @@
 [general]
-name=QGIS Plugin Inspector
+name=Plugin Inspector
 author=Peter Gipper
 email=peter.gipper@wheregroup.com
 description=Get info about registered python plugins
 about=
+homepage=https://github.com/pgipper/plugin_inspector
 repository=https://github.com/pgipper/plugin_inspector
 tracker=https://github.com/pgipper/plugin_inspector/issues
 tags=development,debugging,python,plugins
