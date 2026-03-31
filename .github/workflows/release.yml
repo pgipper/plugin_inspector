@@ -1,9 +1,8 @@
 name: Release Plugin
 
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
 
 jobs:
   release:
@@ -26,4 +25,3 @@ jobs:
           qgis-plugin-ci release ${GITHUB_REF_NAME} \
             --github-token ${{ secrets.GITHUB_TOKEN }} \
             --create-plugin-repo
-
