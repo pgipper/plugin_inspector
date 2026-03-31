@@ -1,2 +1,4 @@
 [tool.qgis-plugin-ci]
 plugin_path = "plugin_inspector"
+github_organization_slug = "pgipper"
+project_slug = "plugin_inspector"
